@@ -3,9 +3,51 @@
 <head>
   <meta charset="utf-8">
   <title>FoodMe</title>
+
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/bootstrap-united.css">
+
+  <!-- ========================= -->
+  <!-- Grafana Faro Web SDK (CDN) -->
+  <!-- ========================= -->
+  <script>
+    (function () {
+      var webSdkScript = document.createElement("script");
+
+      // Load Grafana Faro Web SDK (2.x)
+      webSdkScript.src =
+        "https://unpkg.com/@grafana/faro-web-sdk@2/dist/bundle/faro-web-sdk.iife.js";
+
+      webSdkScript.onload = function () {
+        window.GrafanaFaroWebSdk.initializeFaro({
+          url: "https://faro-collector-prod-ap-south-1.grafana.net/collect/74b8dc5a60070ab28fff4dfe5ba8dad3",
+          app: {
+            name: "FoodMe-Frontend",
+            version: "1.0.0",
+            environment: "production",
+          },
+        });
+
+        // Load tracing instrumentation AFTER SDK initialization
+        var webTracingScript = document.createElement("script");
+
+        webTracingScript.src =
+          "https://unpkg.com/@grafana/faro-web-tracing@2/dist/bundle/faro-web-tracing.iife.js";
+
+        webTracingScript.onload = function () {
+          window.GrafanaFaroWebSdk.faro.instrumentations.add(
+            new window.GrafanaFaroWebTracing.TracingInstrumentation()
+          );
+        };
+
+        document.head.appendChild(webTracingScript);
+      };
+
+      document.head.appendChild(webSdkScript);
+    })();
+  </script>
 </head>
+
 <body>
 
 <div class="container">
@@ -25,27 +67,29 @@
     </div>
   </div>
 
-
   <ng-view></ng-view>
-
 </div>
 
-<!-- In production use:
-<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.2/angular.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.2/angular-resource.min.js"></script>
--->
+<!-- ================= -->
+<!-- AngularJS runtime -->
+<!-- ================= -->
+
 <script src="lib/angular/angular.js"></script>
 <script src="lib/angular/angular-resource.js"></script>
+
 <script src="js/app.js"></script>
+
 <script src="js/controllers/CheckoutController.js"></script>
 <script src="js/controllers/CustomerController.js"></script>
 <script src="js/controllers/MenuController.js"></script>
 <script src="js/controllers/NavbarController.js"></script>
 <script src="js/controllers/RestaurantsController.js"></script>
 <script src="js/controllers/ThankYouController.js"></script>
+
 <script src="js/directives/fmDeliverTo.js"></script>
 <script src="js/directives/fmCheckboxList.js"></script>
 <script src="js/directives/fmRating.js"></script>
+
 <script src="js/services/alert.js"></script>
 <script src="js/services/customer.js"></script>
 <script src="js/services/localStorage.js"></script>

@@ -1,5 +1,9 @@
 'use strict';
 
-foodMeApp.controller('ThankYouController', function ThankYouController($scope, $routeParams) {
-  $scope.orderId = $routeParams.orderId;
+foodMeApp.controller('ThankYouController', function ThankYouController($scope, $location) {
+  $scope.orderId = $location.search().orderId;
 });
+
+
+
+

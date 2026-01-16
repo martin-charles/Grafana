@@ -10,6 +10,11 @@ foodMeApp.service('cart', function Cart(localStorage, customer, $rootScope, $htt
         name: restaurant.name,
         description: restaurant.description
       };
+
+      // 🚀 Instrument restaurant menu view when cart starts
+      newrelic.addPageAction('viewMenu', { 
+        restaurant: restaurant.name 
+      });
     }
 
     if (self.restaurant.id == restaurant.id) {
@@ -53,6 +58,16 @@ foodMeApp.service('cart', function Cart(localStorage, customer, $rootScope, $htt
         payment: self.payment,
         deliverTo: customer
       }).then(function(response) {
+        
+        // 🚀 Log each item in the order for custom PageAction
+        self.items.forEach(function(item) {
+          newrelic.addPageAction('orderItem', { 
+            restaurant: self.restaurant.name, 
+            item: item.name,
+            qty: item.qty
+          });
+        });
+
         self.reset();
         return response.data.orderId;
       });

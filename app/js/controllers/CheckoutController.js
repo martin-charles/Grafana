@@ -14,7 +14,9 @@ foodMeApp.controller('CheckoutController',
 
     $scope.submitting = true;
     cart.submitOrder().then(function(orderId) {
+      
       $location.path('thank-you').search({orderId: orderId});
+
     });
   };
 });

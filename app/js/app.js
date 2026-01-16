@@ -2,8 +2,10 @@
 
 var foodMeApp = angular.module('foodMeApp', ['ngResource']);
 
+// ---------------------------------------------
+// ROUTES (your original config)
+// ---------------------------------------------
 foodMeApp.config(function($routeProvider) {
-
   $routeProvider.
       when('/', {
         controller: 'RestaurantsController',

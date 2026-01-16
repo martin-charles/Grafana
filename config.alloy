@@ -1,0 +1,146 @@
+// ==============================  
+// TRACES & METRICS → TEMPO & PROMETHEUS  
+// ==============================  
+otelcol.receiver.otlp "ingest" {  
+  grpc {  
+    endpoint = "0.0.0.0:4317"  
+  }  
+
+  http {  
+    endpoint = "0.0.0.0:4318"  
+  }  
+
+  output {  
+    traces  = [otelcol.processor.batch.traces.input]  
+    metrics = [otelcol.processor.batch.metrics.input]  
+  }  
+}  
+
+otelcol.processor.batch "traces" {  
+  output {  
+    traces = [otelcol.exporter.otlp.tempo.input]  
+  }  
+}  
+
+otelcol.processor.batch "metrics" {  
+  output {  
+    metrics = [otelcol.exporter.otlphttp.metrics.input]  
+  }  
+}  
+
+otelcol.exporter.otlp "tempo" {  
+  client {  
+    endpoint = "tempo-prod-19-prod-ap-south-1.grafana.net:443"  
+    auth     = otelcol.auth.basic.grafana.handler  
+  }  
+}  
+
+otelcol.exporter.otlphttp "metrics" {  
+  client {  
+    endpoint = "https://prometheus-prod-43-prod-ap-south-1.grafana.net/otlp"  
+    auth     = otelcol.auth.basic.grafana_metrics.handler  
+  }  
+}  
+
+otelcol.auth.basic "grafana" {  
+  username = env("GRAFANA_CLOUD_TEMPO_USER")  
+  password = env("GRAFANA_CLOUD_TEMPO_API_KEY")  
+}  
+
+otelcol.auth.basic "grafana_metrics" {  
+  username = env("GRAFANA_CLOUD_PROMETHEUS_USER")  
+  password = env("GRAFANA_CLOUD_PROMETHEUS_API_KEY")  
+}  
+
+// ==============================  
+// LOGS → LOKI  
+// ==============================  
+loki.source.docker "foodme_logs" {  
+  host = "unix:///var/run/docker.sock"  
+
+  targets = [  
+    {  
+      container_name = "foodme",  
+    },  
+  ]  
+
+  forward_to = [loki.process.foodme_logs.receiver]  
+}  
+
+loki.process "foodme_logs" {  
+  stage.docker {}  
+
+  stage.json {  
+    expressions = {  
+      level        = "level",  
+      msg          = "msg",  
+      trace_id     = "trace_id",  
+      span_id      = "span_id",  
+      service_name = "service_name",  
+    }  
+  }  
+
+  stage.labels {  
+    values = {  
+      service_name   = "",  
+      container_name = "",  
+      level          = "",  
+    }  
+  }  
+
+  forward_to = [loki.write.grafanacloud.receiver]  
+}  
+
+// ==============================  
+// WINDOWS EVENT LOGS → LOKI  
+// ==============================  
+loki.source.windowsevent "application" {  
+  eventlog_name = "Application"  
+  
+  forward_to = [loki.write.grafanacloud.receiver]  
+}  
+
+loki.source.windowsevent "system" {  
+  eventlog_name = "System"  
+  
+  forward_to = [loki.write.grafanacloud.receiver]  
+}  
+
+loki.source.windowsevent "security" {  
+  eventlog_name = "Security"  
+  
+  forward_to = [loki.write.grafanacloud.receiver]  
+}  
+
+loki.write "grafanacloud" {  
+  endpoint {  
+    url = "https://logs-prod-028.grafana.net/loki/api/v1/push"  
+
+    basic_auth {  
+      username = env("GRAFANA_CLOUD_LOKI_USER")  
+      password = env("GRAFANA_CLOUD_LOKI_API_KEY")  
+    }  
+  }  
+}  
+
+// ==============================  
+// METRICS → PROMETHEUS  
+// ==============================  
+prometheus.scrape "windows_exporter" {  
+  targets = [  
+    {"__address__" = "192.168.1.5:9182"},  
+  ]  
+  
+  forward_to = [prometheus.remote_write.grafanacloud.receiver]  
+}  
+
+prometheus.remote_write "grafanacloud" {  
+  endpoint {  
+    url = "https://prometheus-prod-43-prod-ap-south-1.grafana.net/api/prom/push"  
+
+    basic_auth {  
+      username = env("GRAFANA_CLOUD_PROMETHEUS_USER")  
+      password = env("GRAFANA_CLOUD_PROMETHEUS_API_KEY")  
+    }  
+  }  
+}  
